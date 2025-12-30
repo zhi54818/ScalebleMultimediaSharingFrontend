@@ -3,7 +3,7 @@ import { Message } from '@arco-design/web-vue'
 import { useUserStore } from '@/stores/user'
 
 const service = axios.create({
-  baseURL: '/api',
+  baseURL: 'https://scaleblemultimediasharingbackend-whw-exf0gpd5fmgkd3er.francecentral-01.azurewebsites.net/api',
   timeout: 30000,
   withCredentials: true // 允许携带 cookie（后端使用 Session）
 })

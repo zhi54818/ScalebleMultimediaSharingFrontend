@@ -10,15 +10,7 @@ export default defineConfig({
     }
   },
   server: {
-    port: 3000,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8123',
-        changeOrigin: true,
-        // 后端已经配置了 context-path=/api，所以不需要去掉 /api 前缀
-        // rewrite: (path) => path.replace(/^\/api/, '')
-      }
-    }
+    port: 3000
   }
 })
 
