@@ -1,7 +1,4 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
-name: Build and deploy Node.js app to Azure Web App - ScalebleMultimediaSharingFrontend-whw
+name: Build and deploy Vite app to Azure Web App - ScalebleMultimediaSharingFrontend-whw
 
 on:
   push:
@@ -9,45 +6,58 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  # 将 Node.js 版本定义为一个变量，方便修改
+  NODE_VERSION: '20.x' # 可选 '20.x', '22.x', '24.x'
+
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Set up Node.js version
-        uses: actions/setup-node@v3
+      # 核心修改1: 将 .NET 环境替换为 Node.js 环境
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
+          node-version: ${{ env.NODE_VERSION }}
+          # 启用缓存以加速后续构建
+          cache: 'npm'
 
-      - name: npm install, build, and test
+      # 核心修改2: 安装依赖并执行 Vite 构建 (而非 dotnet build/publish)
+      - name: Install dependencies and build
         run: |
-          npm install
-          npm run build --if-present
-          npm run test --if-present
+          npm ci
+          npx vite build
+        # 重要: 请确认你的 package.json 中 'build' 脚本确实是 Vite 构建
+        # 如果不是，请替换为实际的脚本名，如 `vite build`
 
+      # 核心修改3: 上传 Vite 构建产物 (通常是 dist 文件夹)
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: node-app
-          path: .
+          name: vite-app
+          # Vite 默认的构建输出目录是 'dist'
+          # 如果你的项目配置了不同的输出目录，请修改此处
+          path: ./dist
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write
+      contents: read
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: node-app
-      
+          name: vite-app
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -55,11 +65,11 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_2BD74B7DCDB84EB2AD6F6B468B89D91C }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F10C55085901416990574ADC97BCCA2F }}
 
-      - name: 'Deploy to Azure Web App'
+      - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'ScalebleMultimediaSharingFrontend-whw'
           slot-name: 'Production'
+          # 关键修改: 部署我们构建好的 dist 目录内容
           package: .
-          
